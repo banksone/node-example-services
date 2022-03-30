@@ -36,15 +36,16 @@ app.get("/moviesapi/list", (req, res) => {
   });
 
   // Define and execute the queries
-  let query = "SELECT id, title, overview, homepage FROM vod.movies limit ?";
+  let query = "SELECT id, title, overview, homepage FROM vod.movies limit 2";
   let queryCount = "SELECT count(*) FROM vod.movies";
   let resultJson = {}
   let resultCount = 0;
-
+  let pageState = {}
   let q1 = client
-    .execute(query, ["20"])
+    .execute(query)
     .then((result) => {
-      resultJson = result
+      resultJson['movies'] = result?.rows
+      resultJson['pageState'] = result?.pageState
     })
     .catch((err) => {
       console.log("ERROR:", err);
@@ -52,8 +53,8 @@ app.get("/moviesapi/list", (req, res) => {
   let q2 = client
     .execute(queryCount)
     .then((result) => {
-      console.log("total " + result);
-      resultCount = result
+      console.log("total " + result?.rows[0]?.count);
+      resultJson['total'] = result?.rows[0]?.count
     })
     .catch((err) => {
       console.log("ERROR:", err);
@@ -62,7 +63,6 @@ app.get("/moviesapi/list", (req, res) => {
   // Exit the program after all queries are complete
   Promise.allSettled([q1, q2]).finally(() => {
     client.shutdown();
-    resultJson['total'] = resultCount
     res.send(resultJson);
   });
 });
